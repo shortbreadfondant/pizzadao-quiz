@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pizza DAO — Animateur</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f0f1a;color:#fff;min-height:100vh;}
+.screen{display:none;padding:2rem;min-height:100vh;}
+.screen.active{display:flex;flex-direction:column;}
+
+/* LOBBY */
+.lobby-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;}
+.pizza-logo{font-size:56px;margin-bottom:0.5rem;}
+h1{font-size:2rem;font-weight:700;text-align:center;}
+.sub{color:#aaa;font-size:1rem;text-align:center;}
+.join-url{background:#1a1a2e;border:2px solid #e24b4a;border-radius:12px;padding:1.25rem 2rem;text-align:center;}
+.join-url .label{font-size:0.85rem;color:#aaa;margin-bottom:6px;}
+.join-url .url{font-size:1.4rem;font-weight:700;color:#fff;word-break:break-all;}
+.player-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:700px;}
+.player-chip{background:#1a1a2e;border:1.5px solid #333;border-radius:20px;padding:6px 16px;font-size:0.9rem;display:flex;align-items:center;gap:6px;}
+.player-dot{width:8px;height:8px;border-radius:50%;background:#1d9e75;}
+.player-count{font-size:1.1rem;color:#aaa;}
+.btn{background:#e24b4a;color:#fff;border:none;border-radius:10px;padding:14px 36px;font-size:1.1rem;font-weight:600;cursor:pointer;transition:opacity 0.15s;}
+.btn:hover{opacity:0.85;}
+.btn-outline{background:transparent;border:2px solid #555;color:#ccc;border-radius:10px;padding:10px 24px;font-size:0.95rem;cursor:pointer;}
+.btn-outline:hover{border-color:#aaa;color:#fff;}
+
+/* ACTE */
+.acte-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;text-align:center;}
+.acte-tag{background:#e24b4a;color:#fff;border-radius:20px;padding:4px 16px;font-size:0.85rem;font-weight:600;display:inline-block;}
+.acte-title{font-size:2.2rem;font-weight:700;}
+.acte-sub{color:#aaa;font-size:1rem;}
+
+/* QUESTION */
+.q-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
+.q-meta{display:flex;align-items:center;gap:1rem;}
+.q-num{background:#e24b4a;color:#fff;border-radius:8px;padding:4px 14px;font-size:0.85rem;font-weight:600;}
+.timer-wrap{display:flex;align-items:center;gap:10px;}
+.timer-circle{width:56px;height:56px;border-radius:50%;border:4px solid #e24b4a;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;transition:border-color 0.3s;}
+.timer-circle.danger{border-color:#ff4444;color:#ff4444;}
+.timer-bar-bg{flex:1;height:8px;background:#222;border-radius:4px;overflow:hidden;}
+.timer-bar{height:8px;background:#e24b4a;border-radius:4px;transition:width 1s linear,background 0.3s;}
+
+.q-text{font-size:1.7rem;font-weight:600;text-align:center;margin-bottom:2rem;line-height:1.4;}
+.opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:800px;margin:0 auto 1.5rem;}
+.opt-card{border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:14px;font-size:1rem;font-weight:500;border:2px solid transparent;transition:all 0.3s;}
+.opt-a{background:#2d1a1a;border-color:#e24b4a;color:#f09595;}
+.opt-b{background:#2d2a1a;border-color:#ba7517;color:#fac775;}
+.opt-c{background:#1a2d1a;border-color:#1d9e75;color:#9fe1cb;}
+.opt-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;flex-shrink:0;}
+.ico-a{background:#e24b4a;color:#fff;}
+.ico-b{background:#ba7517;color:#fff;}
+.ico-c{background:#1d9e75;color:#fff;}
+.opt-card.correct{border-width:3px;box-shadow:0 0 0 2px rgba(29,158,117,0.3);}
+.opt-a.correct{background:#1a2d1a;border-color:#1d9e75;color:#9fe1cb;}
+.opt-b.correct{background:#1a2d1a;border-color:#1d9e75;color:#9fe1cb;}
+.opt-c.correct{background:#1a2d1a;border-color:#1d9e75;color:#9fe1cb;}
+.opt-card.correct .opt-icon{background:#1d9e75;}
+.expl{background:#1a2d1a;border:1.5px solid #1d9e75;border-radius:10px;padding:12px 18px;color:#9fe1cb;font-size:0.95rem;max-width:800px;margin:0 auto;display:none;line-height:1.6;}
+
+.answer-bar{background:#1a1a2e;border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;font-size:0.9rem;color:#aaa;max-width:800px;margin:0 auto 1rem;}
+.answer-count{font-size:1.1rem;font-weight:600;color:#fff;}
+
+/* GAME */
+.game-card{background:#1a1a2e;border:2px solid #534ab7;border-radius:16px;padding:2rem;max-width:700px;text-align:center;}
+.game-tag{background:#534ab7;color:#fff;border-radius:20px;padding:4px 16px;font-size:0.85rem;font-weight:600;margin-bottom:1rem;display:inline-block;}
+.game-title{font-size:1.6rem;font-weight:700;margin-bottom:1rem;}
+.game-desc{color:#aaa;font-size:1rem;line-height:1.7;white-space:pre-line;}
+
+/* LEADERBOARD */
+.lb-wrap{max-width:600px;margin:0 auto;width:100%;}
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#1a1a2e;border-radius:10px;margin-bottom:8px;}
+.lb-rank{font-size:1.1rem;font-weight:700;width:32px;text-align:center;color:#ba7517;}
+.lb-avatar{width:38px;height:38px;border-radius:50%;background:#2d1a2d;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;color:#d4537e;flex-shrink:0;}
+.lb-name{flex:1;font-size:1rem;font-weight:500;}
+.lb-pts{font-size:1.1rem;font-weight:700;color:#fac775;}
+.medals{font-size:1.3rem;}
+
+.bonus-panel{background:#1a1a2e;border-radius:12px;padding:1rem;margin-top:1rem;}
+.bonus-row{display:flex;align-items:center;gap:10px;padding:6px 0;}
+.bonus-btn{background:#534ab7;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:0.85rem;cursor:pointer;}
+.bonus-btn:hover{background:#7f77dd;}
+
+.bottom-nav{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:1.5rem;}
+.dots{display:flex;gap:6px;}
+.dot{width:10px;height:10px;border-radius:50%;background:#333;}
+.dot.done{background:#1d9e75;}
+.dot.active{background:#e24b4a;}
+</style>
+</head>
+<body>
+
+<div id="s-lobby" class="screen active">
+  <div class="lobby-center">
+    <div class="pizza-logo">🍕</div>
+    <h1>Pizza DAO Party Quiz</h1>
+    <p class="sub">Abidjan · 22 mai · Bitcoin Pizza Day</p>
+    <div class="join-url">
+      <div class="label">Les joueurs rejoignent sur</div>
+      <div class="url" id="join-url">chargement…</div>
+    </div>
+    <div class="player-count"><span id="player-count">0</span> joueur(s) connecté(s)</div>
+    <div class="player-grid" id="player-grid"></div>
+    <button class="btn" onclick="hostNext()">Lancer le quiz ▶</button>
+  </div>
+</div>
+
+<div id="s-acte" class="screen">
+  <div class="acte-screen">
+    <span class="acte-tag" id="acte-tag">Acte</span>
+    <div class="acte-title" id="acte-title"></div>
+    <div class="acte-sub" id="acte-sub"></div>
+  </div>
+  <div class="bottom-nav">
+    <div></div>
+    <button class="btn" onclick="hostNext()">Première question ▶</button>
+  </div>
+</div>
+
+<div id="s-question" class="screen">
+  <div class="q-top">
+    <div class="q-meta">
+      <span class="q-num" id="q-num">Q1</span>
+      <div style="color:#aaa;font-size:0.9rem;" id="q-type-label">Quiz</div>
+    </div>
+    <div class="timer-wrap" style="flex:1;margin:0 1.5rem;">
+      <div class="timer-bar-bg"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
+    </div>
+    <div class="timer-circle" id="timer-circle">20</div>
+  </div>
+  <div class="q-text" id="q-text"></div>
+  <div class="opts-grid" id="opts-grid"></div>
+  <div class="answer-bar"><span>Réponses reçues</span><span class="answer-count" id="answer-count">0 / 0</span></div>
+  <div class="expl" id="q-expl"></div>
+  <div class="bottom-nav">
+    <div class="dots" id="dots"></div>
+    <button class="btn" id="next-btn" onclick="hostNext()" style="display:none;">Suivant ▶</button>
+  </div>
+</div>
+
+<div id="s-game" class="screen">
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+    <div class="game-card">
+      <span class="game-tag">Jeu / Débat</span>
+      <div class="game-title" id="game-title"></div>
+      <div class="game-desc" id="game-desc"></div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div></div>
+    <button class="btn" onclick="hostNext()">Continuer ▶</button>
+  </div>
+</div>
+
+<div id="s-end" class="screen">
+  <div style="text-align:center;margin-bottom:1.5rem;">
+    <div class="pizza-logo">🏆</div>
+    <h1>Classement final</h1>
+  </div>
+  <div class="lb-wrap" id="leaderboard"></div>
+  <div class="bonus-panel">
+    <div style="font-size:0.9rem;color:#aaa;margin-bottom:8px;">Attribuer un point bonus (jeux/débat)</div>
+    <div id="bonus-list"></div>
+  </div>
+  <div style="text-align:center;margin-top:1.5rem;">
+    <button class="btn-outline" onclick="hostReset()">↺ Rejouer</button>
+  </div>
+</div>
+
+<script>
+const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+const ws = new WebSocket(`${proto}://${location.host}`);
+let qIndex = 0, totalQ = 0, totalPlayers = 0;
+let qNums = [];
+
+const QUESTIONS = [
+  {type:'quiz'},{type:'quiz'},{type:'quiz'},{type:'game'},
+  {type:'quiz'},{type:'quiz'},{type:'vf'},
+  {type:'quiz'},{type:'quiz'},{type:'game'}
+];
+
+document.getElementById('join-url').textContent = location.origin + '/play';
+
+ws.onopen = () => ws.send(JSON.stringify({type:'host-connect'}));
+
+ws.onmessage = (e) => {
+  const msg = JSON.parse(e.data);
+
+  if (msg.type === 'host-state') {
+    totalQ = msg.totalQ;
+    qNums = QUESTIONS.filter(q=>q.type!=='game').map((_,i)=>i);
+    renderPlayers(msg.players);
+  }
+
+  if (msg.type === 'player-joined' || msg.type === 'player-left') {
+    renderPlayers(msg.players);
+  }
+
+  if (msg.type === 'question') {
+    showQuestion(msg);
+  }
+
+  if (msg.type === 'game-slide') {
+    showGame(msg);
+  }
+
+  if (msg.type === 'timer') {
+    updateTimer(msg.value, msg.max);
+  }
+
+  if (msg.type === 'answer-in') {
+    document.getElementById('answer-count').textContent = `${msg.count} / ${msg.total}`;
+  }
+
+  if (msg.type === 'reveal') {
+    revealAnswer(msg.correct, msg.expl);
+  }
+
+  if (msg.type === 'end') {
+    showEnd(msg.leaderboard);
+  }
+
+  if (msg.type === 'leaderboard') {
+    renderLeaderboard(msg.leaderboard);
+  }
+
+  if (msg.type === 'reset') {
+    show('s-lobby');
+  }
+};
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderPlayers(players) {
+  totalPlayers = players.length;
+  document.getElementById('player-count').textContent = players.length;
+  document.getElementById('player-grid').innerHTML = players.map(p =>
+    `<div class="player-chip"><div class="player-dot"></div>${p.name}</div>`
+  ).join('');
+}
+
+function showQuestion(msg) {
+  qIndex = msg.index;
+  const qTypeLabel = msg.qType === 'vf' ? 'Vrai / Faux' : 'Quiz';
+  document.getElementById('q-type-label').textContent = qTypeLabel;
+  const qOnlyIndex = QUESTIONS.slice(0, msg.index + 1).filter(q => q.type !== 'game').length;
+  const qOnlyTotal = QUESTIONS.filter(q => q.type !== 'game').length;
+  document.getElementById('q-num').textContent = `Q${qOnlyIndex}`;
+  document.getElementById('q-text').textContent = msg.text;
+  document.getElementById('answer-count').textContent = `0 / ${totalPlayers}`;
+  document.getElementById('q-expl').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'none';
+
+  const cols = msg.opts.length === 2 ? '1fr 1fr' : '1fr 1fr';
+  const grid = document.getElementById('opts-grid');
+  grid.style.gridTemplateColumns = cols;
+  const cls = ['opt-a','opt-b','opt-c'];
+  const icoCls = ['ico-a','ico-b','ico-c'];
+  const labels = ['A','B','C'];
+  grid.innerHTML = msg.opts.map((o, i) =>
+    `<div class="opt-card ${cls[i]}" id="opt-${i}">
+      <div class="opt-icon ${icoCls[i]}">${labels[i]}</div>
+      <span>${o}</span>
+    </div>`
+  ).join('');
+
+  renderDots(qOnlyIndex - 1, qOnlyTotal);
+  if (msg.acteName) {
+    document.getElementById('acte-tag').textContent = `Acte ${msg.acte}`;
+    document.getElementById('acte-title').textContent = msg.acteName;
+    document.getElementById('acte-sub').textContent = '';
+    show('s-acte');
+  } else {
+    show('s-question');
+  }
+}
+
+function showGame(msg) {
+  document.getElementById('game-title').textContent = msg.gameTitle;
+  document.getElementById('game-desc').textContent = msg.gameDesc;
+  show('s-game');
+}
+
+function updateTimer(value, max) {
+  show('s-question');
+  document.getElementById('timer-circle').textContent = value;
+  document.getElementById('timer-circle').className = 'timer-circle' + (value <= 5 ? ' danger' : '');
+  const pct = Math.round((value / max) * 100);
+  document.getElementById('timer-bar').style.width = pct + '%';
+  document.getElementById('timer-bar').style.background = value <= 5 ? '#ff4444' : '#e24b4a';
+}
+
+function revealAnswer(correct, expl) {
+  const cls = ['opt-a','opt-b','opt-c'];
+  cls.forEach((c, i) => {
+    const el = document.getElementById('opt-' + i);
+    if (el && i === correct) el.classList.add('correct');
+  });
+  const exEl = document.getElementById('q-expl');
+  exEl.textContent = expl;
+  exEl.style.display = 'block';
+  document.getElementById('next-btn').style.display = 'inline-block';
+}
+
+function renderDots(active, total) {
+  document.getElementById('dots').innerHTML = Array.from({length: total}, (_, i) =>
+    `<div class="dot ${i < active ? 'done' : i === active ? 'active' : ''}"></div>`
+  ).join('');
+}
+
+function showEnd(lb) {
+  renderLeaderboard(lb);
+  const bonusList = document.getElementById('bonus-list');
+  bonusList.innerHTML = lb.map(p =>
+    `<div class="bonus-row">
+      <span style="flex:1;font-size:0.95rem;">${p.name}</span>
+      <button class="bonus-btn" onclick="giveBonus('${p.name}')">+500 pts</button>
+    </div>`
+  ).join('');
+  show('s-end');
+}
+
+function renderLeaderboard(lb) {
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('leaderboard').innerHTML = lb.map((p, i) =>
+    `<div class="lb-row">
+      <div class="lb-rank">${medals[i] || (i+1)}</div>
+      <div class="lb-avatar">${p.name.substring(0,2).toUpperCase()}</div>
+      <div class="lb-name">${p.name}</div>
+      <div class="lb-pts">${p.pts} pts</div>
+    </div>`
+  ).join('');
+}
+
+function hostNext() { ws.send(JSON.stringify({type:'next'})); }
+function giveBonus(name) { ws.send(JSON.stringify({type:'bonus', name})); }
+function hostReset() { ws.send(JSON.stringify({type:'reset'})); }
+</script>
+</body>
+</html>
