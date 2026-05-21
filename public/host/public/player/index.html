@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Pizza DAO — Jouer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f0f1a;color:#fff;min-height:100vh;display:flex;flex-direction:column;}
+.screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem;text-align:center;}
+.screen.active{display:flex;}
+
+.logo{font-size:48px;margin-bottom:0.5rem;}
+h1{font-size:1.5rem;font-weight:700;margin-bottom:0.5rem;}
+.sub{color:#aaa;font-size:0.9rem;margin-bottom:2rem;}
+
+input[type=text]{width:100%;max-width:320px;padding:14px 18px;border-radius:12px;border:2px solid #333;background:#1a1a2e;color:#fff;font-size:1.1rem;text-align:center;outline:none;transition:border-color 0.2s;}
+input[type=text]:focus{border-color:#e24b4a;}
+input::placeholder{color:#555;}
+.btn{background:#e24b4a;color:#fff;border:none;border-radius:12px;padding:14px 36px;font-size:1.1rem;font-weight:600;cursor:pointer;width:100%;max-width:320px;margin-top:12px;transition:opacity 0.15s;}
+.btn:hover{opacity:0.85;}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+.waiting{display:flex;flex-direction:column;align-items:center;gap:1rem;}
+.pulse{width:20px;height:20px;border-radius:50%;background:#e24b4a;animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:0.5;}}
+.avatar{width:64px;height:64px;border-radius:50%;background:#2d1a2d;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:#d4537e;border:2px solid #d4537e;}
+
+.timer-bar-bg{width:100%;height:6px;background:#222;border-radius:3px;overflow:hidden;margin-bottom:1.5rem;}
+.timer-bar{height:6px;background:#e24b4a;border-radius:3px;transition:width 1s linear;}
+
+.q-text{font-size:1.1rem;font-weight:600;line-height:1.5;margin-bottom:1.5rem;text-align:left;width:100%;}
+.opts{display:flex;flex-direction:column;gap:10px;width:100%;}
+.opt-btn{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;border:2px solid transparent;font-size:1rem;font-weight:500;cursor:pointer;text-align:left;transition:all 0.15s;}
+.opt-a{background:#2d1a1a;border-color:#e24b4a;color:#f09595;}
+.opt-b{background:#2d2a1a;border-color:#ba7517;color:#fac775;}
+.opt-c{background:#1a2d1a;border-color:#1d9e75;color:#9fe1cb;}
+.opt-btn:disabled{cursor:default;opacity:0.5;}
+.opt-btn.selected{opacity:1;}
+.opt-a.selected{background:#e24b4a;color:#fff;border-color:#e24b4a;}
+.opt-b.selected{background:#ba7517;color:#fff;border-color:#ba7517;}
+.opt-c.selected{background:#1d9e75;color:#fff;border-color:#1d9e75;}
+.opt-btn.correct{background:#1d9e75;border-color:#1d9e75;color:#fff;opacity:1;}
+.opt-btn.wrong{background:#333;border-color:#555;opacity:0.5;}
+.opt-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+.ico-a{background:#e24b4a;color:#fff;}
+.ico-b{background:#ba7517;color:#fff;}
+.ico-c{background:#1d9e75;color:#fff;}
+.opt-a.selected .opt-icon,.opt-b.selected .opt-icon,.opt-c.selected .opt-icon,
+.opt-btn.correct .opt-icon{background:rgba(255,255,255,0.25);}
+
+.result-icon{font-size:56px;margin-bottom:0.5rem;}
+.result-title{font-size:1.4rem;font-weight:700;}
+.result-pts{font-size:1rem;color:#fac775;margin-top:6px;}
+.total-score{font-size:2rem;font-weight:700;color:#fac775;margin-top:0.5rem;}
+.score-label{font-size:0.85rem;color:#aaa;}
+
+.game-card{background:#1a1a2e;border:2px solid #534ab7;border-radius:16px;padding:1.5rem;width:100%;max-width:380px;text-align:center;}
+.game-tag{background:#534ab7;color:#fff;border-radius:20px;padding:4px 14px;font-size:0.8rem;font-weight:600;margin-bottom:1rem;display:inline-block;}
+.game-title{font-size:1.2rem;font-weight:700;margin-bottom:0.75rem;}
+.game-desc{color:#aaa;font-size:0.9rem;line-height:1.6;white-space:pre-line;}
+
+.lb-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1a1a2e;border-radius:10px;margin-bottom:6px;width:100%;max-width:380px;}
+.lb-rank{font-size:1rem;font-weight:700;width:28px;text-align:center;}
+.lb-avatar-sm{width:32px;height:32px;border-radius:50%;background:#2d1a2d;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:#d4537e;flex-shrink:0;}
+.lb-name-sm{flex:1;font-size:0.95rem;}
+.lb-pts-sm{font-size:0.95rem;font-weight:700;color:#fac775;}
+</style>
+</head>
+<body>
+
+<div id="s-join" class="screen active">
+  <div class="logo">🍕</div>
+  <h1>Pizza DAO Quiz</h1>
+  <p class="sub">Bitcoin Pizza Day · Abidjan</p>
+  <input type="text" id="name-input" placeholder="Ton prénom ou pseudo" maxlength="20" onkeydown="if(event.key==='Enter')joinGame()"/>
+  <button class="btn" onclick="joinGame()">Rejoindre ▶</button>
+</div>
+
+<div id="s-waiting" class="screen">
+  <div class="waiting">
+    <div class="logo">🍕</div>
+    <div class="avatar" id="player-avatar">??</div>
+    <div style="font-size:1.1rem;font-weight:600;" id="player-name-display"></div>
+    <div class="pulse"></div>
+    <div style="color:#aaa;font-size:0.9rem;">En attente du démarrage…</div>
+  </div>
+</div>
+
+<div id="s-question" class="screen" style="justify-content:flex-start;padding-top:1.5rem;">
+  <div class="timer-bar-bg" style="max-width:420px;"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
+  <div class="q-text" style="max-width:420px;" id="q-text"></div>
+  <div class="opts" style="max-width:420px;" id="opts"></div>
+</div>
+
+<div id="s-answered" class="screen">
+  <div style="color:#aaa;font-size:0.9rem;margin-bottom:0.5rem;">Réponse envoyée</div>
+  <div class="pulse"></div>
+  <div style="color:#aaa;font-size:0.85rem;margin-top:1rem;">En attente des autres joueurs…</div>
+</div>
+
+<div id="s-result" class="screen">
+  <div class="result-icon" id="result-icon">✅</div>
+  <div class="result-title" id="result-title">Bonne réponse !</div>
+  <div class="result-pts" id="result-pts">+850 pts</div>
+  <div style="margin-top:1.5rem;">
+    <div class="score-label">Score total</div>
+    <div class="total-score" id="total-score">850</div>
+  </div>
+</div>
+
+<div id="s-game" class="screen">
+  <div class="game-card">
+    <span class="game-tag">Jeu / Débat</span>
+    <div class="game-title" id="game-title"></div>
+    <div class="game-desc" id="game-desc"></div>
+  </div>
+</div>
+
+<div id="s-end" class="screen" style="justify-content:flex-start;padding-top:1.5rem;">
+  <div style="font-size:2rem;margin-bottom:0.5rem;">🏆</div>
+  <h1 style="margin-bottom:1.5rem;">Classement final</h1>
+  <div id="final-lb" style="width:100%;display:flex;flex-direction:column;align-items:center;"></div>
+</div>
+
+<script>
+const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+const ws = new WebSocket(`${proto}://${location.host}`);
+let myId = null, myName = '', myScore = 0, myChoice = -1;
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function joinGame() {
+  const name = document.getElementById('name-input').value.trim();
+  if (!name) return;
+  myName = name;
+  ws.send(JSON.stringify({type:'join', name}));
+  document.getElementById('player-avatar').textContent = name.substring(0,2).toUpperCase();
+  document.getElementById('player-name-display').textContent = name;
+}
+
+ws.onmessage = (e) => {
+  const msg = JSON.parse(e.data);
+
+  if (msg.type === 'joined') {
+    myId = msg.id;
+    show('s-waiting');
+  }
+
+  if (msg.type === 'question') {
+    myChoice = -1;
+    showQuestion(msg);
+  }
+
+  if (msg.type === 'timer') {
+    const bar = document.getElementById('timer-bar');
+    if (bar) {
+      const pct = Math.round((msg.value / msg.max) * 100);
+      bar.style.width = pct + '%';
+      bar.style.background = msg.value <= 5 ? '#ff4444' : '#e24b4a';
+    }
+  }
+
+  if (msg.type === 'answer-ack') {
+    myScore = msg.score;
+    if (msg.correct) {
+      document.getElementById('result-icon').textContent = '✅';
+      document.getElementById('result-title').textContent = 'Bonne réponse !';
+      document.getElementById('result-pts').textContent = '+' + msg.bonus + ' pts';
+    } else {
+      document.getElementById('result-icon').textContent = '❌';
+      document.getElementById('result-title').textContent = 'Raté !';
+      document.getElementById('result-pts').textContent = '+0 pts';
+    }
+    document.getElementById('total-score').textContent = msg.score;
+    show('s-result');
+  }
+
+  if (msg.type === 'reveal') {
+    myScore = msg.score;
+    document.getElementById('total-score').textContent = msg.score;
+    show('s-result');
+  }
+
+  if (msg.type === 'game-slide') {
+    document.getElementById('game-title').textContent = msg.gameTitle;
+    document.getElementById('game-desc').textContent = msg.gameDesc;
+    show('s-game');
+  }
+
+  if (msg.type === 'bonus') {
+    myScore = msg.score;
+    document.getElementById('result-icon').textContent = '⭐';
+    document.getElementById('result-title').textContent = 'Bonus reçu !';
+    document.getElementById('result-pts').textContent = '+500 pts';
+    document.getElementById('total-score').textContent = msg.score;
+    show('s-result');
+  }
+
+  if (msg.type === 'end') {
+    renderFinalLB(msg.leaderboard);
+    show('s-end');
+  }
+
+  if (msg.type === 'reset') {
+    show('s-waiting');
+  }
+};
+
+function showQuestion(msg) {
+  document.getElementById('q-text').textContent = msg.text;
+  const cls = ['opt-a','opt-b','opt-c'];
+  const icoCls = ['ico-a','ico-b','ico-c'];
+  const labels = ['A','B','C'];
+  document.getElementById('opts').innerHTML = msg.opts.map((o, i) =>
+    `<button class="opt-btn ${cls[i]}" id="opt-${i}" onclick="choose(${i}, ${msg.opts.length})">
+      <div class="opt-icon ${icoCls[i]}">${labels[i]}</div>
+      <span>${o}</span>
+    </button>`
+  ).join('');
+  document.getElementById('timer-bar').style.width = '100%';
+  show('s-question');
+}
+
+function choose(i, total) {
+  if (myChoice !== -1) return;
+  myChoice = i;
+  const cls = ['opt-a','opt-b','opt-c'];
+  for (let j = 0; j < total; j++) {
+    const btn = document.getElementById('opt-' + j);
+    if (btn) { btn.disabled = true; if (j === i) btn.classList.add('selected'); }
+  }
+  ws.send(JSON.stringify({type:'answer', choice: i}));
+  show('s-answered');
+}
+
+function renderFinalLB(lb) {
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('final-lb').innerHTML = lb.map((p, i) =>
+    `<div class="lb-row ${p.name === myName ? 'style="border-color:#e24b4a"' : ''}">
+      <div class="lb-rank">${medals[i] || (i+1)}</div>
+      <div class="lb-avatar-sm">${p.name.substring(0,2).toUpperCase()}</div>
+      <div class="lb-name-sm">${p.name}</div>
+      <div class="lb-pts-sm">${p.pts} pts</div>
+    </div>`
+  ).join('');
+}
+</script>
+</body>
+</html>
